@@ -106,13 +106,22 @@ class XmlGenerator:
             listener.join()
 
     def tag_selected(self, key):
-        tag = key.char
 
         def tag_option(key):
             if hasattr(key, 'char'):
                 if key.char in ('1', '2'):
                     if key.char == '1':
-                        print(1)
+                        parent_element = ET.Element(self.tags[key.char])
+                        print("Введите название тега: \n")
+                        tag_name = str(input())
+                        new_element = ET.SubElement(parent_element, tag_name)
+                        for item in self.root.iter():
+                            if item.tag == self.tags[key.char]:
+                                item = parent_element
+                        ET.dump(self.root)
+                        tree = ET.ElementTree(self.root)
+                        tree.write(open('orders.xml', 'w'), encoding='unicode')
+                        return False
                     else:
                         print(2)
                 else:
