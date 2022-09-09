@@ -1,16 +1,20 @@
+import shutil
 import sys
 import os
+from os import path
 import json
 import xml.etree.ElementTree as ET
 import time
 import psutil
 from pynput import keyboard
-
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
+import zipfile
 
 def show_info():
     """Доделать инфу на ноуте"""
     d = psutil.disk_partitions()
-    print('C диск информация:', d[0])
+    print('Название диска1', d[0])
     # print('D информация о диске:', d[1])
     # print('Информация о диске:', d[2])
     # print('Получить поле диска:', d[0][0], d[1][0], d[2][0])
@@ -194,7 +198,41 @@ class XmlGenerator:
         self.restart()
 
 
-def exit():
+
+def create_zip():
+
+    def contin(key):
+        def contin(key):
+            if hasattr(key, "char"):
+                if key.char == 'y':
+                    os.remove("new.zip")
+                    os.remove(path.split(src)[1])
+                    XmlGenerator.restart()
+            XmlGenerator.restart()
+
+        zip = zipfile.ZipFile('new.zip')
+        zip.extractall("zip")
+        zip.close()
+
+        print("\nФайл успешно разархивирован\n Он находится в папке zip")
+        print("\n Нажмите на клавишу y, чтобы удалить файл и архив")
+        with keyboard.Listener(
+                on_release=contin, suppress=True) as listener:
+            listener.join()
+
+    Tk().withdraw()
+    src = askopenfilename()
+    new_zip = zipfile.ZipFile('new.zip', 'w')
+    new_zip.write(path.split(src)[1], compress_type=zipfile.ZIP_DEFLATED)
+    new_zip.close()
+    print("\nФайл успешно заархивирован\n Нажмите любую клавижу для продолжения")
+
+    with keyboard.Listener(
+            on_release=contin, suppress=True) as listener:
+        listener.join()
+
+
+def close_program():
     clear = "\n" * 100
     print(clear)
     raise SystemExit
@@ -202,8 +240,14 @@ def exit():
 
 def on_release(key):
     if hasattr(key, 'char'):
-        if key.char in ('1', '2', '3', '4', 'z'):
-            menu = {'1': show_info, '2': writefile, '3': JsonSerializer(), '4': XmlGenerator(), 'z': exit}
+        if key.char in ('1', '2', '3', '4', '5', 'z'):
+            menu = {'1': show_info,
+                    '2': writefile,
+                    '3': JsonSerializer(),
+                    '4': XmlGenerator(),
+                    '5': create_zip,
+                    'z': close_program
+                    }
             menu[key.char]()
         else:
             print("Ошибка! Неверно введена клавиша.")
@@ -214,11 +258,12 @@ def on_release(key):
 def show_menu():
     print(f"\n\n\nВведите цифру соответствующему пункту: \n")
     time.sleep(1)
-    print("Информация по дискам - 1 \n"
-          "Запись и чтение файла - 2 \n"
-          "JSON сериалайзер - 3 \n"
+    print(" Информация по дискам - 1 \n",
+          "Запись и чтение файла - 2 \n",
+          "JSON сериалайзер - 3 \n",
           "XML - 4 \n",
-          "Закрыть программу - z \n"
+          "ZIP - 5\n",
+          "Закрыть программу - z \n",
           )
     with keyboard.Listener(
             on_release=on_release) as listener:
