@@ -1,6 +1,7 @@
 import shutil
 import sys
 import os
+import win32api
 from os import path
 import json
 import xml.etree.ElementTree as ET
@@ -14,12 +15,14 @@ import zipfile
 def show_info():
     """Доделать инфу на ноуте"""
     d = psutil.disk_partitions()
-    print('Название диска1', d[0])
-    # print('D информация о диске:', d[1])
-    # print('Информация о диске:', d[2])
-    # print('Получить поле диска:', d[0][0], d[1][0], d[2][0])
-    # print('Тип данных:', тип(d), '\ n')
-    show_menu()
+    c = psutil.disk_usage(d[0][0])
+    metka = win32api.GetVolumeInformation(d[0][0])
+    print('\nНазвание диска: ', d[0][0][:1])
+    print('Тип: ', d[0][3][3:])
+    print('Объем диска: ', round(c.total/1024/1024/1024, 2), "gb")
+    print('Свободное пространство: ', round(c.free/1024/1024/1024, 2), "gb")
+    print('Метка: ', metka[0], '\n')
+    XmlGenerator.restart()
 
 
 def writefile():
