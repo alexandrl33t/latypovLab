@@ -19,37 +19,48 @@ def show_info():
 
 
 def writefile():
-    with open("new_file", 'w') as file:
+    with open("writefile/new_file.txt", 'w') as file:
         print("Введите строку для записи в файл:")
         file.write(input())
-    with open("new_file", 'r') as file:
+    with open("writefile/new_file.txt", 'r') as file:
         print("Информация внутри файла:\n", file.read())
-    if os.path.isfile("new_file"):
-        os.remove("new_file")
-    exit()
+    if os.path.isfile("writefile/new_file.txt"):
+        os.remove("writefile/new_file.txt")
+    print('Success!')
+    time.sleep(2)
+    XmlGenerator.restart()
 
 
 class JsonSerializer:
 
     def __call__(self, *args, **kwargs):
-        with open("new_file.json", 'w') as file:
+        with open("jsonserializer/new_file.json", 'w') as file:
             data = {'a': 34, 'b': 61, 'c': 82, 'd': 21}
             json.dump(data, file, indent=4, )
-        with open('new_file.json') as f:
+        with open('jsonserializer/new_file.json') as f:
             dataJSON = json.load(f)
-            with open('json_serializedLAB.txt', 'w') as file:
+            with open('jsonserializer/json_serializedLAB.txt', 'w') as file:
                 file.write(str(dataJSON))
-            with open('json_serializedLAB.txt', 'r') as file:
-                print(f"\n {file.read()}")
-            os.remove("json_serializedLAB.txt")
-        exit()
+            with open('jsonserializer//json_serializedLAB.txt', 'r') as file:
+                print(f"Информация внутри файла\n {file.read()}")
+            os.remove("jsonserializer/json_serializedLAB.txt")
+        print('Success!')
+        time.sleep(2)
+        XmlGenerator.restart()
+
 
 
 class XmlGenerator:
 
+    tag = ""
+    xml = None
+    root = None
+    tags = {}
+
     def __call__(self):
+        self.tag = ""
         self.tags = {}
-        self.xml = ET.parse('orders.xml')
+        self.xml = ET.parse('xml/orders.xml')
         self.root = self.xml.getroot()
         for i, child in enumerate(self.root.iter()):
             self.tags[str(i)] = child.tag
@@ -68,7 +79,7 @@ class XmlGenerator:
             listener.join()
 
     def option(self, key):
-        options = {'1': self.add_tag, '2': self.change_tag, '4': self.restart}
+        options = {'1': self.add_tag, '2': self.change_tag, '3':self.delete_tag, '4': self.restart}
         if hasattr(key, "char"):
             if key.char in tuple(item for item in options.keys()):
                 options[key.char]()
@@ -83,18 +94,28 @@ class XmlGenerator:
 
     """Добавить новый тег"""
     def add_tag(self):
-        print("\n*Напишите название тега и родительский элемент  Название тега: \n")
+        print("\n*Напишите название тега и родительский элемент\n  Название тега: \n")
         tag_name = str(input())
-        print("Родительский элемент (опционально)\n")
+        print("Выберете родительский элемент (опционально)\n")
+        for tag in self.tags.items():
+            print(tag[1], " - ", tag[0])
         parent = str(input())
-        if parent not in self.tags.values():
+        print("Текст внутри тега (опционально)\n")
+        text_inside = str(input())
+        if parent not in self.tags.keys():
             parent = self.tags['0']
-        parent_element = ET.Element(parent)
-        new_element = ET.SubElement(parent_element, tag_name)
-        self.root.insert(0, new_element)
+        for elem in self.root.findall(self.tags[parent]):
+            new_element = ET.SubElement(elem, tag_name)
+            new_element.text = text_inside
         ET.dump(self.root)
-        tree = ET.ElementTree(self.root)
-        tree.write(open('orders.xml', 'w'), encoding='unicode')
+        self.xml = ET.ElementTree(self.root)
+        self.xml.write(open('xml/orders.xml', 'w'), encoding='unicode')
+
+        print(f"Тег успешно добавлен!\nНовый XML:\n")
+
+        time.sleep(2)
+        self.restart()
+
 
 
     """Изменение существующего тега"""
@@ -102,50 +123,75 @@ class XmlGenerator:
         print("Выберете тег, который хотите изменить:")
         for tag in self.tags.items():
             print(tag[1], " - ", tag[0])
-        with keyboard.Listener(on_press=self.tag_selected) as listener:
-            listener.join()
+        key = str(input())
+        self.tag_selected(key)
 
     def tag_selected(self, key):
+        print(key)
+        if key in tuple(item for item in self.tags.keys()):
+            print(f"\nВыбран тег - {self.tags[key]}\n")
+            print(" Новое название тега: \n")
+            tag_name = str(input())
+            for elem in self.xml.findall(self.tags[key]):
+                elem.tag = tag_name
+            self.xml.write("xml/orders.xml")
+            print(f"Тег успешно изменен!\nНовый XML:\n")
 
-        def tag_option(key):
-            if hasattr(key, 'char'):
-                if key.char in ('1', '2'):
-                    if key.char == '1':
-                        parent_element = ET.Element(self.tags[key.char])
-                        print("Введите название тега: \n")
-                        tag_name = str(input())
-                        new_element = ET.SubElement(parent_element, tag_name)
-                        for item in self.root.iter():
-                            if item.tag == self.tags[key.char]:
-                                item = parent_element
-                        ET.dump(self.root)
-                        tree = ET.ElementTree(self.root)
-                        tree.write(open('orders.xml', 'w'), encoding='unicode')
-                        return False
-                    else:
-                        print(2)
+        time.sleep(2)
+        self.restart()
+
+    def delete_tag(self):
+        print("Выберете тег, который хотите удалить:")
+        for tag in self.tags.items():
+            print(tag[1], " - ", tag[0])
+        key = str(input())
+        self.tag_deleted(key)
+
+    def tag_deleted(self, key):
+        if key in tuple(item for item in self.tags.keys()):
+            print(f"\nВыбран тег - {self.tags[key]}\n")
+            self.tag = self.tags[key]
+            print(f"\nВы действительно хотите удалить этот тег? (y,n)")
+            with keyboard.Listener(on_press=self.finally_delete, suppress=True) as listener:
+                listener.join()
+
+    def get_key(self, value):
+        for k, v in self.tags.items():
+            if v == value:
+                return str(k)
+
+
+    def finally_delete(self, key):
+        if hasattr(key, "char"):
+            if key.char in ('y', 'n'):
+                if key.char == 'y':
+                    pass
                 else:
-                    print("Ошибка")
-                    return False
+                    self.tag_selected(self.get_key(self.tag))
             else:
-                print("Ошибка")
-                return False
-
-        if hasattr(key, 'char'):
-            if key.char in tuple(item for item in self.tags.keys()):
-                print(f"\nВыбран тег - {self.tags[key.char]}\n")
-                print("Выберете опцию: \n"
-                      "Добавить дочерний тег - 1 \n"
-                      "Изменить название текущего тега - 2 \n"
-                      )
-                with keyboard.Listener(on_press=tag_option) as listener2:
-                    listener2.join()
-            else:
-                XmlGenerator()
+                self.tag_selected(self.get_key(self.tag))
         else:
-            print(list(item for item in self.tags.keys()))
-            print("Ошибка")
-            XmlGenerator()
+            self.tag_selected(self.get_key(self.tag))
+
+        print("\nПроцесс удаления...\n")
+        for i in reversed(range(len(self.tag))):
+            print(f"{self.tag[0:i+1]}...")
+            time.sleep(0.5)
+
+        for elem in self.root.iter():
+            if elem.tag == self.tag:
+                self.root.remove(elem)
+                break
+            else:
+                for child in elem.findall(self.tag):
+                    elem.remove(child)
+        tree = ET.ElementTree(self.root)
+        tree.write(open('xml/orders.xml', 'w'), encoding='unicode')
+        print("\nТег успешно удален!\n")
+        print("ОБНОВЛЕННЫЙ XML\n")
+        ET.dump(self.root)
+        time.sleep(2)
+        self.restart()
 
 
 def exit():
@@ -166,7 +212,7 @@ def on_release(key):
 
 
 def show_menu():
-    print(f"Введите цифру соответствующему пункту: \n")
+    print(f"\n\n\nВведите цифру соответствующему пункту: \n")
     time.sleep(1)
     print("Информация по дискам - 1 \n"
           "Запись и чтение файла - 2 \n"
